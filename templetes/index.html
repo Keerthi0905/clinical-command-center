@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Clinical Command Center | Emergency Alert</title>
+    <style>
+        :root { --accent: #007aff; --danger: #ff4d4f; --glass: rgba(30, 41, 59, 0.7); --neon: #38bdf8; --success: #10b981; }
+        body { background: #0f172a; font-family: 'Inter', sans-serif; margin: 0; padding: 20px; color: #f8fafc; overflow: hidden; }
+        .layout { display: grid; grid-template-columns: 300px 1fr 350px; gap: 20px; height: 95vh; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(20px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); padding: 20px; overflow-y: auto; }
+        
+        /* NEW: Emergency Pulse Animation */
+        .emergency-dot {
+            height: 12px; width: 12px; background-color: var(--danger); border-radius: 50%; display: inline-block; margin-right: 8px;
+            box-shadow: 0 0 0 rgba(255, 77, 79, 0.4); animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 77, 79, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0); }
+        }
+
+        /* Badges */
+        .visit-badge { background: rgba(56, 189, 248, 0.1); color: var(--neon); border: 1px solid var(--neon); font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
+        .uid-badge { color: #94a3b8; font-size: 11px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+        
+        /* Cards */
+        .patient-card { background: rgba(255,255,255,0.03); border-radius: 18px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); position: relative; }
+        .patient-card.discharged { border-color: var(--success); background: rgba(16, 185, 129, 0.05); }
+        .summary-box { background: #fef9c3; color: #854d0e; padding: 12px; border-radius: 12px; margin: 10px 0; font-size: 12px; }
+
+        .role-nav a { display: block; padding: 12px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; }
+        .role-nav a.active { background: var(--accent); color: white; }
+        input, select, button { border-radius: 8px; padding: 10px; border: 1px solid #334155; background: #1e293b; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <div class="glass-card">
+        <h2 style="color: var(--neon); margin-top:0;">🛰️ Ops Control</h2>
+        <div class="role-nav">
+            <a href="/?dept=All" class="{% if dept == 'All' %}active{% endif %}">🏠 Overview</a>
+            <a href="/?dept=Triage" class="{% if dept == 'Triage' %}active{% endif %}">💉 Triage View</a>
+            <a href="/?dept=Consultation" class="{% if dept == 'Consultation' %}active{% endif %}">🩺 Doctor View</a>
+            <a href="/?dept=Lab" class="{% if dept == 'Lab' %}active{% endif %}">🔬 Lab View</a>
+            <a href="/?dept=Pharmacy" class="{% if dept == 'Pharmacy' %}active{% endif %}">💊 Pharmacy View</a>
+        </div>
+        <hr style="opacity:0.1; margin:20px 0;">
+        <form action="/register" method="POST" style="display:flex; flex-direction:column; gap:10px;">
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="number" name="age" placeholder="Age" required>
+            <select name="priority">
+                <option value="Routine">Routine</option>
+                <option value="Emergency">Emergency</option>
+            </select>
+            <button type="submit" style="background:var(--accent); border:none; font-weight:bold;">Register</button>
+        </form>
+    </div>
+
+    <div class="glass-card">
+        <h2>📑 Patient Pathway</h2>
+        {% for p in patients %}
+        <div class="patient-card {% if p.current_dept == 'Discharge' %}discharged{% endif %}">
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    {% if p.priority == 'Emergency' and p.current_dept != 'Discharge' %}
+                        <span class="emergency-dot"></span>
+                    {% endif %}
+                    <strong style="font-size:18px;">{{ p.name }}</strong>
+                    <span class="uid-badge">P-ID: {{ p.patient_uid }}</span>
+                    <span class="visit-badge">Visit #{{ p.visit_count }}</span>
+                </div>
+                <span style="font-size:11px; color: var(--success); font-weight:bold;">
+                    {{ "COMPLETED" if p.current_dept == "Discharge" else p.current_dept }}
+                </span>
+            </div>
+
+            <div class="summary-box">
+                <strong>📝 PATIENT TIMELINE:</strong><br>
+                {% for a in p.audit_trail %}
+                    {{ a.action }} ({{ a.ts }}){% if not loop.last %} → {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if p.current_dept != 'Discharge' %}
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:10px;">
+                <form action="/update_clinical/{{ p.id }}" method="POST" style="display:flex; gap:5px;">
+                    <input type="text" name="detail" placeholder="Log Order..." style="flex:1;">
+                    <button type="submit">Log</button>
+                </form>
+                <form action="/transition/{{ p.id }}" method="POST">
+                    <select name="target_dept" style="width:100%; margin-bottom:5px;">
+                        <option value="Triage">Move to Triage</option>
+                        <option value="Consultation">Move to Doctor</option>
+                        <option value="Lab">Move to Lab</option>
+                        <option value="Pharmacy">Move to Pharmacy</option>
+                        <option value="Discharge">Final Discharge Summary</option>
+                    </select>
+                    <button type="submit" style="width:100%; background:var(--success); border:none;">Update Location</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="glass-card">
+        <h2 style="color: var(--success); margin-top:0;">📁 Records Store</h2>
+        {% for arc in archive %}
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:12px; margin-bottom:10px; font-size:12px;">
+            <strong>{{ arc.name }}</strong> <span class="uid-badge">P-ID: {{ arc.patient_uid }}</span><br>
+            <small>Visit #{{ arc.visit_count }} | Finalized: {{ arc.audit_trail[-1].ts }}</small>
+        </div>
+        {% endfor %}
+
+        <h2 style="color: #a78bfa; margin-top:30px;">📡 Broadcast Feed</h2>
+        {% for item in feed %}
+        <div style="padding:8px; border-left:2px solid var(--accent); background:rgba(255,255,255,0.02); margin-bottom:5px; font-size:11px;">
+            <small>{{ item.ts }}</small> - {{ item.msg }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>
