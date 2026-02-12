@@ -3,6 +3,14 @@
 
 ---
 
+## 🎥 Video Demo
+
+Watch the full project demonstration here:
+
+👉 [Click to Watch Demo](https://drive.google.com/file/d/1x0K2IHWXXvDv7rdgFjHHUIxjenyxsBWj/view?usp=sharing)
+
+---
+
 ## Overview
 
 Clinical Command Center is a Flask-based web application that simulates a hospital patient workflow system.
@@ -84,31 +92,13 @@ Each transition:
 
 ## 📂 Project Structure
 
-```
 clinical-command-center/
 │
 ├── app.py
 ├── templates/
-│   └── index.html
-└── README.md
-```
-
-## 💡 Why This Project?
-
-This project demonstrates:
-
-- Backend routing and state management in Flask
-- Dynamic UI rendering with Jinja2
-- Workflow simulation logic
-- Clean UI design with glassmorphism styling
-- Structured audit logging and state transitions
-
-## 🗺 Roadmap
-
-- Database integration
-- Authentication & role-based access
-- Real-time updates with WebSockets
-- REST API support
-- Exportable patient reports
+│ └── index.html
+├── README.md
+├── .gitignore
+└── LICENSE
 
 
